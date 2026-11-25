@@ -2,14 +2,11 @@ import { Hono } from 'hono'
 
 import { slotsFor, validateBooking, validateSubscribe, type FieldErrors } from '../shared/validation'
 
-// The Worker in front of the static site. The form routes validate input and
-// return a reference; connect them to email, a CRM or a D1 table to keep the
-// requests. Everything else falls through to the built assets (SPA mode).
-type Env = {
-  ASSETS: Fetcher
-}
-
-const app = new Hono<{ Bindings: Env }>()
+// The API behind the site. The same app runs in development (through the Vite
+// plugin in scripts/dev-api.ts) and on Vercel (api/*.ts). The form routes
+// validate input and return a reference; connect them to email, a CRM or a
+// database to keep the requests.
+const app = new Hono()
 
 const reference = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 
@@ -56,6 +53,4 @@ app.post('/api/subscribe', async (c) => {
 
 app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404))
 
-app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw))
-
-export default app
+export { app }

@@ -15,8 +15,8 @@ the studio and team, booking, ideas board, a 404 and the live style guide at
 
 ```sh
 bun install
-bun run dev        # http://localhost:5319 (Vite + the Worker in workerd)
-bun run build      # dist/client (assets) + dist/interior_studio/index.js (Worker)
+bun run dev        # http://localhost:5319 (Vite, with /api served in-process)
+bun run build      # dist/ (static site)
 ```
 
 ## Edit it
@@ -33,10 +33,12 @@ bun run build      # dist/client (assets) + dist/interior_studio/index.js (Worke
 - State lives in `localStorage` (`src/lib/store.ts`): the ideas board and its
   notes, the quiz result, the booking draft and the confirmed booking.
 
-## Worker routes
+## API routes
 
-`src/worker/index.ts` validates with the same rules as the forms
-(`src/shared/validation.ts`):
+`src/server/app.ts` validates with the same rules as the forms
+(`src/shared/validation.ts`). It runs two ways: in-process through
+`scripts/dev-api.ts` during `bun run dev`, and as the Vercel Functions in `api/`
+when deployed.
 
 | Route | Does |
 | --- | --- |
@@ -45,10 +47,16 @@ bun run build      # dist/client (assets) + dist/interior_studio/index.js (Worke
 | `POST /api/bookings` | Validates a booking: 201 with a reference, 422 with field errors, 409 if the time is taken |
 | `POST /api/subscribe` | Newsletter email: 201 or 422 |
 
-Nothing is stored server-side. Connect `/api/bookings` to email, a CRM or a D1
-table to keep requests.
+Nothing is stored server-side. Connect `/api/bookings` to email, a CRM or a
+database to keep requests.
 
-## Deploy with Freebuff Sites
+## Deploy to Vercel
 
-`deploy.json` already points at the build output. After `bun run build`, deploy
-it with the `sites_deploy` tool (or the Sites API) from this directory.
+Import the repo into Vercel and deploy: the **Vite** preset is detected, and
+`vercel.json` sets the output to `dist` and rewrites unmatched paths to
+`index.html` so client-side routes such as `/portfolio` survive a hard refresh.
+The files in `api/` become Vercel Functions behind `/api/health`, `/api/slots`,
+`/api/bookings` and `/api/subscribe`.
+
+To run the deployed setup locally instead of Vite, use the Vercel CLI
+(`vercel dev`); `bun run dev` already serves the same API routes.
